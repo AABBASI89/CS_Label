@@ -2,22 +2,44 @@
 %  Purkinje cells identified in Phy GUI after Spyking-Circus spike sorting.
 %  The output of this script is fed into CS_Label_GUI for labeling Complex Spikes
 %  Author - Aamir Abbasi
-%% -------------------------------------------------------------------------------------------
+%  0 based index [0   1  2  3  4  5  6  7  8  9 10 11 12 13 14 15];
+%  Polytrode 0 - [21 17 53 18 57 22 23 30 55 61 32 63 59 19 20 28];
+%  Polytrode 1 - [27 26 52 49 48 25 50 58 54 62 56 29 60 24 51 64];
+%  Polytrode 2 - [5   8 44 47  1  7 31 40 42 36 46  3 38 10 45 34];
+%  Polytrode 3 - [11 15 43 16 39 12  9  4 41 35  2 33 37 13 14  6];
+% -------------------------------------------------------------------------------------------
+%% DEFINE VARIABLES
 clc; close all; clear;
-PATHNAME = uigetdir;
-%Get channel_id from Phy GUI: Channel id on Phy GUI + 1 + number of M1 channels eg. 4+1+32=37
-Channel_id = 35+32; %n+32 get n from the google sheet!
-r = SEV2mat(PATHNAME,'CHANNEL',Channel_id);
+% ON GOOGLE SHEET: Phy Channel ID refers to the polytrode channel where the
+% spike was strongest. Make chan equal to Phy Channel ID on google sheet
+chan = 9;
+% ON GOOGLE SHEET: Phy Channel ID refers to the polytrode channel where the
+% spike was strongest. Make equal to Phy Channel ID on google sheet
+good_cluster = 11;
+%RS_Channel refers to channel in current polytrode as defined by reference
+%chart above -OR- make RS_Channel equal to n on Google sheet
+RS_Channel = 35;
 
+% Script will ask for four file inputs
+% 1. LFP SEV folder
+% 2. .dat file for desired polytrode  % NOTE: change view to all files
+% 3. FOLDER containing npy file for desired polytrode
+% 4. Saving folder
+
+%% READ LFP DATA FROM SEV FILES OF RS4 (NOT from DAT file)
+disp('Extracting LFPs...');
+disp('Select LFP SEV folder')
+PATHNAME = uigetdir;
+addpath(genpath('C:\Users\DanielsenN\Documents\MATLAB\TDTSDK\TDTbin2mat'));
+addpath(genpath('C:\Users\DanielsenN\Documents\MATLAB\npy-matlab-master\npy-matlab'));
+Channel_id = RS_Channel+32; 
+r = SEV2mat(PATHNAME,'CHANNEL',Channel_id);
 % Extract M1 single units continous data
 data = r.RSn1.data;
-
-% Get sampling frequency
+% Get ampling frequency
 Fs = 24414;
-
 % Get Nyquist frequency
 Fn = Fs/2;
-
 % ---- Filter LFP data ----
 % High pass filter
 CutOff_freqs = [30, 400];
@@ -25,30 +47,46 @@ Wn = CutOff_freqs./Fn;
 filterOrder = 2;
 [b,a] = butter(filterOrder,Wn);
 lfp_data = filtfilt(b,a,double(data));
-
 % Notch filter parameters to remove 60Hz line noise
 % d = designfilt('bandstopiir','FilterOrder',2, ...
 %   'HalfPowerFrequency1',59.9,'HalfPowerFrequency2',60.1, ...
 %   'DesignMethod','butter','SampleRate',Fs);
 lfp_data = filtfilt(b,a,lfp_data);
+disp('Done!!!');
 
 %% ---- Get Spike data ----
+% Select the .dat file under the polytrode containing the good channel. 
+disp('Extracting high pass spike continous data...'); 
+disp('Select .dat file for desired polytrode  % NOTE: change view to all files')
 nChans = 16; % 16 for polytrodes and 4 for tetrodes
-phy_Chan = 11+1; % n+1 to convert python into matlab indicies get n from the google sheet
+phy_Chan = chan+1; % n+1 to convert python into matlab indicies get n from the google sheet
 [FILENAME,PATHNAME] = uigetfile;
 fiD = fopen([PATHNAME,FILENAME],'r');
 cont_data = fread(fiD,'float32');
 cont_data = reshape(cont_data,nChans,length(cont_data)/nChans);
 cont_data = cont_data(phy_Chan,:);
+disp('Done!!!');
 
 %% ---- Get Simple Spike Timestamps from Spyking-Circus ----
+% Select gui folder w/ .npy file
+disp('Extracting spike timestamps...');
+disp('Select FOLDER containing npy file for desired polytrode')
 NPY_filepath = uigetdir;
 files = dir([NPY_filepath,'\spike*.npy']);
 spike_times    = double(readNPY([NPY_filepath,'\',files(3).name]));
 spike_clusters = readNPY([NPY_filepath,'\',files(1).name]);
-good_cluster = 9; % Get this info from Phy GUI
 spike_timestamps = spike_times(spike_clusters==good_cluster)';
+disp('Done!!!');
 
 %% ---- Save ----
+disp('Saving...');
+disp('Select folder you want to save in')
+fid = fopen('PC_ID.txt','r'); 
+pc_id = fscanf(fid,'%d');
 savepath = uigetdir; % !!!-Pay attendtion to change the PC number in the savepath-!!!
-save([savepath,'\PC9','.mat'],'lfp_data','cont_data','spike_timestamps','Fs');
+save([savepath,'\PC',num2str(pc_id),'.mat'],'lfp_data','cont_data','spike_timestamps','Fs');
+fid = fopen('PC_ID.txt','w');
+fwrite(fid,num2str(pc_id+1));
+disp('Done!!!');
+
+%%

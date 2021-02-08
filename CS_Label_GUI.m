@@ -162,7 +162,6 @@ global fs;
 global labels;
 global PATHNAME;
 global FILENAME;
-global PCid;
 [FILENAME, PATHNAME,~] = uigetfile;
 load([PATHNAME,FILENAME]);
 pc_trace = cont_data;
@@ -172,9 +171,7 @@ fs = Fs;
 labels = zeros(1,length(pc_trace));
 disp(FILENAME);
 disp(PATHNAME);
-fileID = fopen('PC_ID.txt','r');
-formatSpec = '%i';
-PCid = fscanf(fileID,formatSpec);
+
 
 % --- Executes on button press in plotbutton.
 function plotbutton_Callback(hObject, eventdata, handles)
@@ -253,18 +250,17 @@ function savebutton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global labels;
 global pc_trace;
-global PATHNAME;
-global FILENAME;
 global lfp_trace;
-global PCid;
+global FILENAME;
+global PATHNAME;
 HIGH = pc_trace;
 Labels = logical(labels);
 RAW = lfp_trace;
-PCid = PCid+1;
-save([PATHNAME,FILENAME(6:7),num2str(PCid),'_CSDetect.mat'],'HIGH','Labels','RAW');
+savepath = [PATHNAME,'Marked\'];
+if ~exist(savepath, 'dir')
+    mkdir(savepath);
+end
+save([savepath,FILENAME],'HIGH','Labels','RAW');
 axes(handles.axes1);
-fileID = fopen('PC_ID.txt','w');
-fprintf(fileID,'%4i\n',PCid);
-fclose(fileID);
 disp('Saving done!');
 zoom on 
