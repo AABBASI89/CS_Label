@@ -162,6 +162,7 @@ global fs;
 global labels;
 global PATHNAME;
 global FILENAME;
+global outputFID;
 [FILENAME, PATHNAME,~] = uigetfile;
 load([PATHNAME,FILENAME]);
 pc_trace = cont_data;
@@ -171,7 +172,7 @@ fs = Fs;
 labels = zeros(1,length(pc_trace));
 disp(FILENAME);
 disp(PATHNAME);
-
+outputFID = fopen('output.txt','w');
 
 % --- Executes on button press in plotbutton.
 function plotbutton_Callback(hObject, eventdata, handles)
@@ -205,7 +206,6 @@ global X;
 [X,~] = ginput(2);
 axes(handles.axes1);
 %vline(X,'k--');
-disp(X);
 axes(handles.axes1);
 zoom on 
 
@@ -216,6 +216,9 @@ function updatebutton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global labels;
 global X;
+global outputFID;
+disp(X);
+fprintf(outputFID,'%12.8f %12.8f\n',X);
 labels(round(X(1)*24414):round(X(2)*24414)) = 1;
 axes(handles.axes1);
 zoom on 
@@ -227,6 +230,9 @@ function clearbutton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global labels;
 global X;
+global outputFID;
+fprintf(outputFID,repmat('\b', 1, length('%12.8f %12.8f\n')));
+disp('Last marked CS label cleared...');
 labels(round(X(1)*24414):round(X(2)*24414)) = 0;
 axes(handles.axes1);
 zoom on 
@@ -238,10 +244,12 @@ function clearallbutton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global labels;
 global pc_trace;
+global outputFID;
+outputFID = fopen('output.txt','w');
 labels = zeros(1,length(pc_trace));
+disp('All marked CS labels cleared...');
 axes(handles.axes1);
 zoom on 
-
 
 % --- Executes on button press in savebutton.
 function savebutton_Callback(hObject, eventdata, handles)
