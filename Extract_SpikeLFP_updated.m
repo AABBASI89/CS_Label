@@ -11,9 +11,6 @@
 %% DEFINE VARIABLES
 clc; close all; clear;
 % ON GOOGLE SHEET: Phy Channel ID refers to the polytrode channel where the
-% spike was strongest. Make chan equal to Phy Channel ID on google sheet
-chan = 9;
-% ON GOOGLE SHEET: Phy Channel ID refers to the polytrode channel where the
 % spike was strongest. Make equal to Phy Channel ID on google sheet
 good_cluster = 11;
 %RS_Channel refers to channel in current polytrode as defined by reference
@@ -22,13 +19,12 @@ RS_Channel = 35;
 
 % Script will ask for four file inputs
 % 1. LFP SEV folder
-% 2. .dat file for desired polytrode  % NOTE: change view to all files
-% 3. FOLDER containing npy file for desired polytrode
+% 2. FOLDER containing npy file for desired polytrode
 % 4. Saving folder
 
 %% READ LFP DATA FROM SEV FILES OF RS4 (NOT from DAT file)
 disp('Extracting LFPs...');
-disp('Select LFP SEV folder')
+%Select LFP SEV folder
 PATHNAME = uigetdir;
 addpath(genpath('C:\Users\DanielsenN\Documents\MATLAB\TDTSDK\TDTbin2mat'));
 addpath(genpath('C:\Users\DanielsenN\Documents\MATLAB\npy-matlab-master\npy-matlab'));
@@ -47,24 +43,15 @@ Wn = CutOff_freqs./Fn;
 filterOrder = 2;
 [b,a] = butter(filterOrder,Wn);
 lfp_data = filtfilt(b,a,double(data));
-% Notch filter parameters to remove 60Hz line noise
-% d = designfilt('bandstopiir','FilterOrder',2, ...
-%   'HalfPowerFrequency1',59.9,'HalfPowerFrequency2',60.1, ...
-%   'DesignMethod','butter','SampleRate',Fs);
-% lfp_data = filtfilt(b,a,lfp_data);
-disp('Done!!!');
 
-%% ---- Get Spike data ----
-% Select the .dat file under the polytrode containing the good channel. 
 disp('Extracting high pass spike continous data...'); 
-disp('Select .dat file for desired polytrode  % NOTE: change view to all files')
-nChans = 16; % 16 for polytrodes and 4 for tetrodes
-phy_Chan = chan+1; % n+1 to convert python into matlab indicies get n from the google sheet
-[FILENAME,PATHNAME] = uigetfile;
-fiD = fopen([PATHNAME,FILENAME],'r');
-cont_data = fread(fiD,'float32');
-cont_data = reshape(cont_data,nChans,length(cont_data)/nChans);
-cont_data = cont_data(phy_Chan,:);
+% ---- Filter Spike data ----
+% Low pass filter
+CutOff_freqs = [30, 3000];
+Wn = CutOff_freqs./Fn;
+filterOrder = 2;
+[b,a] = butter(filterOrder,Wn);
+cont_data = filtfilt(b,a,double(data));
 disp('Done!!!');
 
 %% ---- Get Simple Spike Timestamps from Spyking-Circus ----
